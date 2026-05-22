@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SuperAlarm</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --yellow:#ffd400;
+  --text:#ffffff;
+  --muted:#9a9a9a;
+  --card:#161616;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif;}
+
+body{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  background:linear-gradient(160deg,#000,#111,#1c1c1c);
+  color:var(--text);
+}
+
+.app{
+  width:100%;
+  max-width:420px;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+}
+
+/* HEADER */
+.header{
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:10px;
+}
+
+/* SCREENS */
+.screen{display:none;}
+.screen.active{display:block;}
+
+/* DIGITAL */
+.digital{
+  text-align:center;
+  font-size:46px;
+  font-weight:700;
+}
+.ampm{font-size:18px;color:var(--yellow);}
+
+/* ANALOG */
+.analog{
+  width:240px;height:240px;
+  border-radius:50%;
+  background:radial-gradient(circle,#222,#000);
+  margin:25px auto;
+  position:relative;
+  box-shadow:0 0 50px rgba(255,212,0,.25);
+}
+
+.number{
+  position:absolute;
+  font-size:14px;
+  font-weight:600;
+  transform:translate(0%,50%);
+}
+
+.hand{
+  position:absolute;
+  top:50%;left:50%;
+  transform-origin:left;
+  transform:translateY(-50%);
+}
+.hour{width:32%;height:4px;background:white;}
+.minute{width:42%;height:3px;background:#ddd;}
+.second{width:45%;height:2px;background:var(--yellow);}
+
+/* CENTER BUTTON */
+.center-btn{
+  display:flex;
+  justify-content:center;
+  margin-top:10px;
+}
+
+.btn{
+  padding:16px 30px;
+  border-radius:30px;
+  border:none;
+  font-weight:700;
+  cursor:pointer;
+}
+.primary{
+  background:var(--yellow);
+  color:black;
+}
+
+/* FORM */
+.form-card{
+  background:var(--card);
+  border-radius:18px;
+  padding:18px;
+  margin-bottom:14px;
+}
+
+label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px;}
+
+select,input{
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:none;
+  background:#0f0f0f;
+  color:white;
+  margin-bottom:12px;
+}
+
+/* DAYS */
+.days{
+  display:flex;
+  justify-content:space-between;
+  font-size:12px;
+}
+.days label{color:white;}
+
+/* ALARMS */
+.alarm-card{
+  background:var(--card);
+  border-radius:18px;
+  padding:16px;
+  margin-bottom:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.alarm-time{font-size:22px;font-weight:700;}
+.alarm-label{font-size:13px;color:var(--muted);}
+
+/* TOGGLE */
+.toggle{
+  width:46px;height:26px;
+  background:#333;border-radius:20px;
+  position:relative;cursor:pointer;
+}
+.toggle::after{
+  content:'';
+  width:20px;height:20px;
+  background:#999;border-radius:50%;
+  position:absolute;top:3px;left:4px;
+  transition:.2s;
+}
+.toggle.on{background:var(--yellow);}
+.toggle.on::after{background:black;left:22px;}
+
+/* NAV */
+.nav{
+  margin-top:auto;
+  background:#111;
+  border-radius:20px;
+  padding:14px;
+  display:flex;
+  justify-content:space-around;
+}
+.nav div{
+  font-size:12px;
+  color:var(--muted);
+  cursor:pointer;
+}
+.nav .active{color:var(--yellow);}
+
+/* POPUPS */
+.toast{
+  position:fixed;
+  bottom:30px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#222;
+  padding:12px 20px;
+  border-radius:20px;
+  display:none;
+}
+
+/* MATH */
+#mathBox{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.92);
+  z-index:999;
+  color:white;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<div class="header">SuperAlarm</div>
+
+<!-- SET -->
+<div class="screen active" id="setScreen">
+  <div class="digital" id="digitalTime"></div>
+
+  <div class="analog" id="analog">
+    <div class="hand hour" id="hour"></div>
+    <div class="hand minute" id="minute"></div>
+    <div class="hand second" id="second"></div>
+  </div>
+
+  <div class="center-btn">
+    <button class="btn primary" onclick="showAdd()">SET ALARM</button>
+  </div>
+</div>
+
+<!-- MANAGE -->
+<div class="screen" id="manageScreen">
+  <div id="alarmList"></div>
+</div>
+
+<!-- ADD -->
+<div class="screen" id="addScreen">
+  <div class="form-card">
+    <label>Hour</label>
+    <select id="hourInput">
+      <script>
+        for(let i=1;i<=12;i++)document.write(`<option>${i}</option>`);
+      </script>
+    </select>
+
+    <label>Minute</label>
+    <select id="minuteInput">
+      <script>
+        for(let i=0;i<60;i++)document.write(`<option>${String(i).padStart(2,'0')}</option>`);
+      </script>
+    </select>
+
+    <label>AM / PM</label>
+    <select id="ampmInput">
+      <option>AM</option>
+      <option>PM</option>
+    </select>
+
+    <label>Days</label>
+    <div class="days">
+      <label><input type="checkbox" value="0">Sun</label>
+      <label><input type="checkbox" value="1">Mon</label>
+      <label><input type="checkbox" value="2">Tue</label>
+      <label><input type="checkbox" value="3">Wed</label>
+      <label><input type="checkbox" value="4">Thu</label>
+      <label><input type="checkbox" value="5">Fri</label>
+      <label><input type="checkbox" value="6">Sat</label>
+    </div>
+
+    <label>Label</label>
+    <input id="labelInput" placeholder="Morning Alarm">
+  </div>
+
+  <button class="btn primary" onclick="addAlarm()">SAVE ALARM</button>
+</div>
+
+<div class="nav">
+  <div class="active" onclick="showSet()">⏰<br>Set</div>
+  <div onclick="showManage()">📋<br>Manage</div>
+</div>
+
+</div>
+
+<div class="toast" id="toast">Alarm Set Successfully ✅</div>
+
+<div id="mathBox">
+  <h2>Solve to Stop Alarm</h2>
+  <p id="question"></p>
+  <input id="answer">
+  <button class="btn primary" onclick="checkAnswer()">Submit</button>
+</div>
+
+<audio id="alarmSound" loop>
+  <source src="mixkit-facility-alarm-sound-999.wav">
+</audio>
+
+<script>
+/* CLOCK + NUMBERS */
+const analog=document.getElementById("analog");
+for(let i=1;i<=12;i++){
+  let n=document.createElement("div");
+  n.className="number";
+  n.innerText=i;
+  let angle=i*30*Math.PI/180;
+  n.style.left=120+90*Math.sin(angle)+"px";
+  n.style.top=120-90*Math.cos(angle)+"px";
+  analog.appendChild(n);
+}
+
+let alarms=[],activeAlarm=null,correctAnswer;
+
+function updateClock(){
+  let now=new Date();
+  let h=now.getHours(),m=now.getMinutes(),s=now.getSeconds();
+  let am=h>=12?"PM":"AM";
+  h=h%12||12;
+  digitalTime.innerHTML=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} <span class="ampm">${am}</span>`;
+  hour.style.transform=`translateY(-50%) rotate(${h*30+m/2}deg)`;
+  minute.style.transform=`translateY(-50%) rotate(${m*6}deg)`;
+  second.style.transform=`translateY(-50%) rotate(${s*6}deg)`;
+  checkAlarms(now);
+}
+setInterval(updateClock,1000);
+
+/* NAV */
+function showSet(){setScreen.classList.add("active");manageScreen.classList.remove("active");addScreen.classList.remove("active");}
+function showManage(){renderAlarms();manageScreen.classList.add("active");setScreen.classList.remove("active");addScreen.classList.remove("active");}
+function showAdd(){addScreen.classList.add("active");setScreen.classList.remove("active");manageScreen.classList.remove("active");}
+
+/* ADD */
+function addAlarm(){
+  let h=hourInput.value;
+  let m=minuteInput.value;
+  let ap=ampmInput.value;
+  let time=`${h}:${m} ${ap}`;
+  let days=[...document.querySelectorAll(".days input:checked")].map(d=>+d.value);
+  alarms.push({time,label:labelInput.value,days,active:true});
+  toast.style.display="block";
+  setTimeout(()=>toast.style.display="none",2000);
+  showManage();
+}
+
+/* RENDER */
+function renderAlarms(){
+  alarmList.innerHTML="";
+  alarms.forEach((a,i)=>{
+    alarmList.innerHTML+=`
+    <div class="alarm-card">
+      <div>
+        <div class="alarm-time">${a.time}</div>
+        <div class="alarm-label">${a.label||"Alarm"}</div>
+      </div>
+      <div class="toggle ${a.active?'on':''}" onclick="toggleAlarm(${i})"></div>
+    </div>`;
+  });
+}
+function toggleAlarm(i){alarms[i].active=!alarms[i].active;renderAlarms();}
+
+/* CHECK */
+function checkAlarms(now){
+  let day=now.getDay();
+  let h=now.getHours(),m=now.getMinutes();
+  let ap=h>=12?"PM":"AM";
+  h=h%12||12;
+  let current=`${h}:${String(m).padStart(2,'0')} ${ap}`;
+  alarms.forEach(a=>{
+    if(a.active && a.time===current && a.days.includes(day) && activeAlarm!==current){
+      triggerAlarm();
+    }
+  });
+}
+
+/* ALARM */
+function triggerAlarm(){
+  activeAlarm=true;
+  alarmSound.play();
+  generateMath();
+  mathBox.style.display="flex";
+}
+
+function generateMath(){
+  let a=Math.floor(Math.random()*20),b=Math.floor(Math.random()*20);
+  correctAnswer=a+b;
+  question.innerText=`${a} + ${b} = ?`;
+}
+
+function checkAnswer(){
+  if(+answer.value===correctAnswer){
+    alarmSound.pause();
+    mathBox.style.display="none";
+    activeAlarm=null;
+  }else alert("Wrong! Try again");
+}
+</script>
+</body>
+</html>
